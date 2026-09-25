@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and publish release
+    runs-on: windows-latest
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+
+      - name: Verify the tag
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tags must look like v1.0.0. Found: $tag"
+          }
+          Write-Host "Releasing $tag"
+
+      - name: Build StackConfig.zip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = Join-Path $env:RUNNER_TEMP 'StackConfig'
+          $package = Join-Path $env:GITHUB_WORKSPACE 'StackConfig.zip'
+
+          New-Item -ItemType Directory -Path (Join-Path $stage 'modules') -Force | Out-Null
+          Copy-Item -LiteralPath 'StackConfig.ps1' -Destination $stage
+          Copy-Item -LiteralPath 'StackConfig.xaml' -Destination $stage
+          Copy-Item -LiteralPath 'modules/StackConfig.psm1' -Destination (Join-Path $stage 'modules')
+
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $package -Force
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($package)
+          try {
+            $entries = @($archive.Entries | ForEach-Object { $_.FullName })
+          }
+          finally {
+            $archive.Dispose()
+          }
+
+          $required = @('StackConfig.ps1', 'StackConfig.xaml', 'modules/StackConfig.psm1')
+          $missing = @($required | Where-Object { $entries -notcontains $_ })
+          if ($missing.Count -gt 0) {
+            throw "StackConfig.zip is missing: $($missing -join ', ')"
+          }
+          Write-Host "Package entries: $($entries -join ', ')"
+
+      - name: Create the GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:GITHUB_REF_NAME
+          gh release create $tag 'StackConfig.zip' --verify-tag --title $tag --generate-notes

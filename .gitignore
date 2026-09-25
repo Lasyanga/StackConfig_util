@@ -1,0 +1,16 @@
+# Local packages and release artifacts
+*.zip
+
+# Backups created by the utility or by hand
+*.bak
+*.bak-*
+
+# Activity logs and temporary files
+*.log
+.stack-*
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
