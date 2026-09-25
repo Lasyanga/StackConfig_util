@@ -2,7 +2,7 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Apache / PHP / MariaDB Configuration Utility"
-        Height="780" Width="600" MinHeight="620" MinWidth="560" MaxWidth="640"
+        Height="780" Width="600" MinHeight="620" MinWidth="560"
         Background="#1A1A2E" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
